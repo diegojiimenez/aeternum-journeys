@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import MapView from './pages/MapView';
 import AddJourney from './pages/AddJourney';
+import JourneyGallery from './pages/JourneyGallery';
 
 function App() {
   return (
@@ -12,6 +13,8 @@ function App() {
           {/* La ruta base '/' mostrará el MapView */}
           <Route index element={<MapView />} />
           <Route path="add" element={<AddJourney />} />
+          <Route path="add" element={<AddJourney />} />
+          <Route path="journey/:id" element={<JourneyGallery />} />
           
           {/* Aquí agregaremos las demás pantallas después */}
           <Route path="timeline" element={<div className="p-10 text-center font-serif text-2xl">Próximamente: Timeline</div>} />

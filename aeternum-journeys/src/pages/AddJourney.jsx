@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Search, MapPin } from 'lucide-react'; // Agregamos íconos para que se vea más pro
+import { Search, MapPin, ImagePlus, X } from 'lucide-react';
 
 export default function AddJourney() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Nuevos estados para el buscador inteligente
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   
-  // Ahora el formData incluye latitud y longitud desde el inicio
+  // Nuevo estado para guardar las fotos seleccionadas
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
+
   const [formData, setFormData] = useState({
     destination: '',
     title: '',
@@ -22,11 +22,8 @@ export default function AddJourney() {
     longitude: null
   });
 
-  // Función que busca lugares en Mapbox MIENTRAS escribes
   const handleSearch = async (text) => {
     setSearchQuery(text);
-    
-    // Solo buscamos si hay más de 2 letras para no gastar peticiones a lo tonto
     if (text.length > 2) {
       try {
         const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(text)}.json?access_token=${import.meta.env.VITE_MAPBOX_TOKEN}&types=place,country,region`);
@@ -36,58 +33,103 @@ export default function AddJourney() {
         console.error("Error buscando lugar:", error);
       }
     } else {
-      setSuggestions([]); // Limpiamos si borran el texto
+      setSuggestions([]);
     }
   };
 
-  // Cuando haces clic en una sugerencia de la lista
   const handleSelectPlace = (place) => {
-    setSearchQuery(place.place_name); // Mostramos el nombre bonito en el input
+    setSearchQuery(place.place_name);
     setFormData({
       ...formData,
       destination: place.place_name,
-      longitude: place.center[0], // Guardamos la longitud exacta
-      latitude: place.center[1]   // Guardamos la latitud exacta
+      longitude: place.center[0],
+      latitude: place.center[1]
     });
-    setSuggestions([]); // Escondemos la lista
+    setSuggestions([]);
+  };
+
+  // Función para manejar cuando eligen fotos
+  const handlePhotoSelect = (e) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setSelectedPhotos((prev) => [...prev, ...filesArray]);
+    }
+  };
+
+  // Función para quitar una foto de la vista previa
+  const removePhoto = (indexToRemove) => {
+    setSelectedPhotos((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validación de seguridad: Asegurarnos de que eligieron un lugar de la lista
     if (!formData.latitude || !formData.longitude) {
-      alert("Por favor, selecciona un destino de la lista desplegable.");
+      alert("Por favor, selecciona un destino de la lista.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Ya no buscamos coordenadas aquí, ¡ya las tenemos exactas!
-      const { error } = await supabase.from('journeys').insert([{
-        destination: formData.destination,
-        title: formData.title,
-        arrival_date: formData.arrival_date,
-        departure_date: formData.departure_date,
-        story: formData.story,
-        latitude: formData.latitude,
-        longitude: formData.longitude
-      }]);
+      // 1. Guardamos el Viaje y pedimos que nos devuelva el ID creado (.select())
+      const { data: journeyData, error: journeyError } = await supabase
+        .from('journeys')
+        .insert([{
+          destination: formData.destination,
+          title: formData.title,
+          arrival_date: formData.arrival_date,
+          departure_date: formData.departure_date,
+          story: formData.story,
+          latitude: formData.latitude,
+          longitude: formData.longitude
+        }])
+        .select(); // IMPORTANTE: Esto nos devuelve el viaje recién creado
 
-      if (error) throw error;
+      if (journeyError) throw journeyError;
+      
+      const newJourneyId = journeyData[0].id;
+
+      // 2. Subimos las fotos al Storage y las guardamos en la tabla 'media'
+      if (selectedPhotos.length > 0) {
+        for (const photo of selectedPhotos) {
+          // Creamos un nombre único para la foto
+          const fileExt = photo.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${newJourneyId}/${fileName}`; // Las guardamos en una carpeta con el ID del viaje
+
+          // Subimos al bucket 'memories' (Asegúrate de que tu bucket se llame así)
+          const { error: uploadError } = await supabase.storage
+            .from('memories')
+            .upload(filePath, photo);
+
+          if (uploadError) throw uploadError;
+
+          // Obtenemos el link público de la foto
+          const { data: publicUrlData } = supabase.storage
+            .from('memories')
+            .getPublicUrl(filePath);
+
+          // Guardamos el link en tu tabla 'media'
+          await supabase.from('media').insert([{
+            journey_id: newJourneyId,
+            media_url: publicUrlData.publicUrl,
+            media_type: 'image'
+          }]);
+        }
+      }
+
       navigate('/'); // Volvemos al mapa
       
     } catch (error) {
-      console.error('Error guardando el viaje:', error);
-      alert('Hubo un error al guardar el viaje.');
+      console.error('Error guardando:', error);
+      alert('Hubo un error al guardar el viaje o las fotos.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-88px)] bg-roman-bg flex items-center justify-center p-6">
+    <div className="w-full min-h-[calc(100vh-88px)] bg-roman-bg flex items-center justify-center p-6 my-8">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-8 border border-gray-100 relative">
         
         <div className="text-center mb-8">
@@ -110,8 +152,6 @@ export default function AddJourney() {
                 onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
-
-            {/* Lista Desplegable de Resultados */}
             {suggestions.length > 0 && (
               <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {suggestions.map((place) => (
@@ -173,12 +213,54 @@ export default function AddJourney() {
             ></textarea>
           </div>
 
+          {/* ZONA DE SUBIDA DE FOTOS */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Memories</label>
+            
+            {/* Caja punteada */}
+            <div className="border-2 border-dashed border-bronze/40 rounded-xl p-8 text-center hover:bg-roman-bg/50 transition-colors relative cursor-pointer">
+              {/* Input invisible flotando sobre la caja */}
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <ImagePlus className="mx-auto text-bronze mb-2" size={32} />
+              <p className="text-sm font-medium text-charcoal">Drag & drop photos here</p>
+              <p className="text-xs text-gray-500 mt-1">or click to browse from device</p>
+            </div>
+
+            {/* Vista previa de las fotos seleccionadas */}
+            {selectedPhotos.length > 0 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
+                {selectedPhotos.map((photo, index) => (
+                  <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                    <img 
+                      src={URL.createObjectURL(photo)} 
+                      alt="preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-1 right-1 bg-black/50 hover:bg-black text-white rounded-full p-1"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button 
             type="submit" 
             disabled={isSubmitting}
             className="w-full bg-bronze hover:bg-bronze-dark text-white font-medium py-3.5 rounded-lg transition-colors shadow-md mt-4 disabled:opacity-50 flex justify-center items-center"
           >
-            {isSubmitting ? 'Sealing...' : 'Seal Our Memories'}
+            {isSubmitting ? 'Sealing Memories...' : 'Seal Our Memories'}
           </button>
         </form>
 

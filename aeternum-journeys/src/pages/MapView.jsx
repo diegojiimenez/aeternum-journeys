@@ -1,35 +1,43 @@
 import { useState, useEffect } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl';
-import { MapPin } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // Importamos tu puente de conexión
+import { useNavigate } from 'react-router-dom';
+import { MapPin, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 export default function MapView() {
+  const navigate = useNavigate();
   const [viewState, setViewState] = useState({
     longitude: 12.4964,
     latitude: 41.9028,
-    zoom: 3
+    zoom: 2.5
   });
 
-  // 1. Nuevos estados para guardar los datos
-  const [journeys, setJourneys] = useState([]); // Aquí se guardará la lista de viajes
-  const [selectedJourney, setSelectedJourney] = useState(null); // El viaje al que le dimos clic
+  const [journeys, setJourneys] = useState([]);
+  const [selectedJourney, setSelectedJourney] = useState(null);
 
-  // 2. Efecto mágico que busca los datos al abrir la página
   useEffect(() => {
     async function fetchJourneys() {
-      // Pedimos todos los datos a la tabla 'journeys'
-      const { data, error } = await supabase.from('journeys').select('*');
+      const { data, error } = await supabase
+        .from('journeys')
+        .select('*, media(media_url)');
       
       if (error) {
         console.error('Error al cargar viajes:', error);
       } else {
-        setJourneys(data || []); // Guardamos los viajes encontrados
+        setJourneys(data || []);
       }
     }
 
     fetchJourneys();
   }, []);
+
+  const formatTravelDate = (dateString) => {
+    if (!dateString) return 'Fecha inolvidable';
+    const date = new Date(dateString);
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
 
   return (
     <div className="w-full h-[calc(100vh-88px)] relative bg-[#E8DCC4]">
@@ -42,7 +50,7 @@ export default function MapView() {
         projection="globe"
       >
         
-        {/* 3. DIBUJAMOS LOS PINES DINÁMICAMENTE */}
+        {/* DIBUJAMOS LOS PINES */}
         {journeys.map((journey) => (
           <Marker 
             key={journey.id}
@@ -51,7 +59,7 @@ export default function MapView() {
             anchor="bottom"
             onClick={(e) => {
               e.originalEvent.stopPropagation(); 
-              setSelectedJourney(journey); // Abrimos la tarjeta de este viaje específico
+              setSelectedJourney(journey);
             }}
           >
             <div className="cursor-pointer transition-transform hover:scale-110 drop-shadow-lg">
@@ -60,40 +68,57 @@ export default function MapView() {
           </Marker>
         ))}
 
-        {/* 4. LA VENTANITA (Popup) DINÁMICA */}
+        {/* LA VENTANITA (Popup) DINÁMICA */}
         {selectedJourney && (
-          <Popup
+<Popup
             longitude={selectedJourney.longitude}
             latitude={selectedJourney.latitude}
             anchor="top"
             onClose={() => setSelectedJourney(null)}
             closeOnClick={false}
+            closeButton={false} // ¡Apagamos la X diminuta por defecto!
             className="rounded-2xl overflow-hidden shadow-2xl"
             maxWidth="300px"
           >
-            <div className="p-2 text-center font-sans">
+            {/* NUESTRA "X" PERSONALIZADA Y ELEGANTE */}
+            <button 
+              onClick={() => setSelectedJourney(null)}
+              className="absolute top-2 right-2 z-10 bg-white/80 backdrop-blur-sm hover:bg-gray-100 text-gray-500 p-1.5 rounded-full transition-colors"
+            >
+              <X size={18} strokeWidth={2.5} />
+            </button>
+
+            <div className="p-3 pt-5 text-center font-sans">
               <h3 className="font-serif text-xl text-charcoal font-semibold mt-1">
                 {selectedJourney.destination}
               </h3>
               
-              {/* Aquí luego formatearemos bien la fecha */}
               <p className="text-xs text-terracotta font-medium mb-3 uppercase tracking-wider">
-                {selectedJourney.arrival_date ? selectedJourney.arrival_date : 'Fecha inolvidable'}
+                {formatTravelDate(selectedJourney.arrival_date)}
               </p>
               
-              {/* Foto provisional hasta que conectemos la tabla de fotos */}
-              <img 
-                src="https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=400&auto=format&fit=crop" 
-                alt={selectedJourney.destination}
-                className="w-full h-32 object-cover rounded-lg shadow-sm"
-              />
+              {selectedJourney.media && selectedJourney.media.length > 0 ? (
+                <img 
+                  src={selectedJourney.media[0].media_url} 
+                  alt={selectedJourney.destination}
+                  className="w-full h-32 object-cover rounded-lg shadow-sm"
+                />
+              ) : (
+                <div className="w-full h-32 bg-roman-bg rounded-lg border border-bronze/20 flex items-center justify-center text-gray-400 text-sm italic">
+                  No photos yet
+                </div>
+              )}
               
               <p className="text-sm text-gray-600 mt-3 italic line-clamp-2">
                 "{selectedJourney.story || selectedJourney.title}"
               </p>
               
-              <button className="mt-4 mb-1 bg-bronze hover:bg-bronze-dark text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors w-full">
-                Ver Galería Completa
+              {/* Le damos funcionalidad al botón */}
+              <button 
+                onClick={() => navigate(`/journey/${selectedJourney.id}`)}
+                className="mt-4 mb-1 bg-bronze hover:bg-bronze-dark text-white px-4 py-2 rounded-full text-sm font-medium transition-colors w-full shadow-sm"
+              >
+                View Full Gallery
               </button>
             </div>
           </Popup>
