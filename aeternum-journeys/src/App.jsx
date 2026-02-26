@@ -1,32 +1,26 @@
-import { Map, Plane, Plus } from 'lucide-react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import MapView from './pages/MapView';
+import AddJourney from './pages/AddJourney';
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center space-y-8 p-10 font-sans">
-      
-      {/* Título con fuente Serif romana */}
-      <h1 className="text-5xl font-serif text-charcoal font-semibold">
-        Aeternum Journeys
-      </h1>
-      
-      <p className="text-lg text-gray-600 max-w-md text-center">
-        Nuestra historia por el mundo, un destino a la vez.
-      </p>
-
-      {/* Botón con tu color Bronce y un ícono de Lucide */}
-      <button className="flex items-center gap-2 bg-bronze hover:bg-bronze-dark text-white px-6 py-3 rounded-full transition-colors shadow-lg">
-        <Plus size={20} />
-        <span className="font-medium">Add New Journey</span>
-      </button>
-
-      {/* Íconos decorativos en Terracota */}
-      <div className="flex gap-6 mt-10 text-terracotta">
-        <Map size={40} strokeWidth={1.5} />
-        <Plane size={40} strokeWidth={1.5} />
-      </div>
-
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        {/* Todo estará envuelto en nuestro Layout (La barra de navegación) */}
+        <Route path="/" element={<Layout />}>
+          {/* La ruta base '/' mostrará el MapView */}
+          <Route index element={<MapView />} />
+          <Route path="add" element={<AddJourney />} />
+          
+          {/* Aquí agregaremos las demás pantallas después */}
+          <Route path="timeline" element={<div className="p-10 text-center font-serif text-2xl">Próximamente: Timeline</div>} />
+          <Route path="gallery" element={<div className="p-10 text-center font-serif text-2xl">Próximamente: Galería</div>} />
+          <Route path="journal" element={<div className="p-10 text-center font-serif text-2xl">Próximamente: Journal</div>} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
