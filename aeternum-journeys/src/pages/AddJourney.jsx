@@ -141,7 +141,7 @@ export default function AddJourney() {
           
           {/* BUSCADOR INTELIGENTE */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Destino de los Chelitos</label>
             <div className="relative">
               <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
               <input 
@@ -171,7 +171,7 @@ export default function AddJourney() {
           {/* Fechas */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Llegada</label>
               <input 
                 type="date" 
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-bronze/50 focus:border-bronze text-gray-600"
@@ -180,7 +180,7 @@ export default function AddJourney() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Salida</label>
               <input 
                 type="date" 
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-bronze/50 focus:border-bronze text-gray-600"
@@ -192,10 +192,9 @@ export default function AddJourney() {
 
           {/* Title & Story */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Story Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Título del Viaje</label>
             <input 
               type="text" 
-              placeholder="e.g., Our Parisian Picnic at Sunset"
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-bronze/50 focus:border-bronze"
               value={formData.title}
               onChange={(e) => setFormData({...formData, title: e.target.value})}
@@ -203,10 +202,9 @@ export default function AddJourney() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Journal Entry</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Historia del viaje</label>
             <textarea 
               rows="3"
-              placeholder="Write a small memory from this place..."
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-bronze/50 focus:border-bronze"
               value={formData.story}
               onChange={(e) => setFormData({...formData, story: e.target.value})}
@@ -215,7 +213,7 @@ export default function AddJourney() {
 
           {/* ZONA DE SUBIDA DE FOTOS */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Memories</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subir Fotitos</label>
             
             {/* Caja punteada */}
             <div className="border-2 border-dashed border-bronze/40 rounded-xl p-8 text-center hover:bg-roman-bg/50 transition-colors relative cursor-pointer">
@@ -223,7 +221,7 @@ export default function AddJourney() {
               <input 
                 type="file" 
                 multiple 
-                accept="image/*"
+                accept="image/*,video/*"
                 onChange={handlePhotoSelect}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />

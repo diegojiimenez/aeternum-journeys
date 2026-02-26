@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, X } from 'lucide-react';
+import { MapPin, X, Plus, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -40,7 +40,33 @@ export default function MapView() {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-88px)] relative bg-[#E8DCC4]">
+    <div className="w-full h-screen relative bg-[#E8DCC4]">
+      
+      {/* BOTONES FLOTANTES (Añadir viaje y Cerrar Sesión) */}
+      <div className="absolute top-6 right-6 z-10 flex gap-4">
+        <button 
+          onClick={() => navigate('/add')}
+          className="flex items-center gap-2 bg-bronze hover:bg-bronze-dark text-white px-5 py-3 rounded-full shadow-lg transition-all font-medium"
+        >
+          <Plus size={18} />
+          <span className="hidden md:inline">Agregar Viajesito</span>
+        </button>
+        
+        <button 
+          onClick={() => supabase.auth.signOut()}
+          className="flex items-center justify-center w-12 h-12 bg-white hover:bg-gray-50 text-terracotta rounded-full shadow-lg transition-all"
+          title="Sign Out"
+        >
+          <LogOut size={18} />
+        </button>
+      </div>
+
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+        <div className="bg-white/80 backdrop-blur-sm px-5 py-2 rounded-full shadow-sm border border-white/50 text-xl md:text-sm font-serif text-charcoal flex items-center gap-1.5">
+          Hecho con <span className="text-terracotta text-base leading-none">❤️</span> por Dieguito para su Chelita
+        </div>
+      </div>
+
       <Map
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
@@ -70,13 +96,13 @@ export default function MapView() {
 
         {/* LA VENTANITA (Popup) DINÁMICA */}
         {selectedJourney && (
-<Popup
+          <Popup
             longitude={selectedJourney.longitude}
             latitude={selectedJourney.latitude}
             anchor="top"
             onClose={() => setSelectedJourney(null)}
             closeOnClick={false}
-            closeButton={false} // ¡Apagamos la X diminuta por defecto!
+            closeButton={false} 
             className="rounded-2xl overflow-hidden shadow-2xl"
             maxWidth="300px"
           >
@@ -113,7 +139,6 @@ export default function MapView() {
                 "{selectedJourney.story || selectedJourney.title}"
               </p>
               
-              {/* Le damos funcionalidad al botón */}
               <button 
                 onClick={() => navigate(`/journey/${selectedJourney.id}`)}
                 className="mt-4 mb-1 bg-bronze hover:bg-bronze-dark text-white px-4 py-2 rounded-full text-sm font-medium transition-colors w-full shadow-sm"
