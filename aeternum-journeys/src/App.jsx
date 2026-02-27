@@ -27,7 +27,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return <div className="min-h-screen bg-roman-bg flex items-center justify-center font-serif text-2xl text-terracotta">Cargando Aeternum...</div>;
+  if (loading) return <div className="min-h-screen bg-roman-bg flex items-center justify-center font-serif text-2xl text-terracotta">Cargando Viajes...</div>;
 
   return (
     <BrowserRouter>

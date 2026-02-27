@@ -35,7 +35,7 @@ export default function Login() {
           D&D
         </div>
 
-        <h1 className="text-3xl font-serif text-charcoal font-semibold mb-2">Aeternum Journeys</h1>
+        <h1 className="text-3xl font-serif text-charcoal font-semibold mb-2">Viajes de los Chelitos</h1>
         <p className="text-gray-500 text-sm mb-8">Nuestra historia, nuestro mundo.</p>
 
         <form onSubmit={handleLogin} className="space-y-5 text-left">
