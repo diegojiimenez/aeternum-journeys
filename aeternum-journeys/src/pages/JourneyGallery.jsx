@@ -98,7 +98,7 @@ export default function JourneyGallery() {
 
           <div className="flex gap-8 border-y border-gray-100 py-4 mb-8">
             <div>
-              <p className="text-xs text-gray-400 font-semibold tracking-widest uppercase mb-1">Memorias</p>
+              <p className="text-xs text-gray-400 font-semibold tracking-widest uppercase mb-1">Recuerdos</p>
               <p className="text-xl font-serif text-bronze font-bold">{journey.media ? journey.media.length : 0}</p>
             </div>
           </div>
