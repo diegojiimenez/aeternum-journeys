@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Search, MapPin, ImagePlus, X } from 'lucide-react';
+import heic2any from 'heic2any';
 
 export default function AddJourney() {
   const navigate = useNavigate();
@@ -9,8 +10,8 @@ export default function AddJourney() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   
-  // Nuevo estado para guardar las fotos seleccionadas
   const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [isConverting, setIsConverting] = useState(false);
 
   const [formData, setFormData] = useState({
     destination: '',
@@ -48,11 +49,41 @@ export default function AddJourney() {
     setSuggestions([]);
   };
 
-  // Función para manejar cuando eligen fotos
-  const handlePhotoSelect = (e) => {
+const handlePhotoSelect = async (e) => {
     if (e.target.files) {
+      setIsConverting(true); 
       const filesArray = Array.from(e.target.files);
-      setSelectedPhotos((prev) => [...prev, ...filesArray]);
+      const processedFiles = [];
+
+      for (let file of filesArray) {
+        // Si detectamos que es una foto de iPhone (.heic)
+        if (file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic') {
+          try {
+            // Convertimos la foto a un JPEG estándar
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: 'image/jpeg',
+              quality: 0.8 // 80% de calidad para que cargue rápido
+            });
+            
+            // Aseguramos el formato final y le cambiamos el nombre a .jpg
+            const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+            const newFileName = file.name.replace(/\.[^/.]+$/, ".jpg");
+            const newFile = new File([finalBlob], newFileName, { type: 'image/jpeg' });
+            
+            processedFiles.push(newFile);
+          } catch (error) {
+            console.error("Error convirtiendo HEIC:", error);
+            alert("No se pudo procesar la imagen de iPhone: " + file.name);
+          }
+        } else {
+          // Si es un JPG, PNG o Video normal, pasa directo
+          processedFiles.push(file);
+        }
+      }
+
+      setSelectedPhotos((prev) => [...prev, ...processedFiles]);
+      setIsConverting(false); // Terminamos de procesar
     }
   };
 
@@ -133,8 +164,8 @@ export default function AddJourney() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-8 border border-gray-100 relative">
         
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-serif text-charcoal font-semibold mb-2">Chronicle a New Adventure</h2>
-          <p className="text-gray-500 text-sm">Capture the essence of your journey together.</p>
+          <h2 className="text-3xl font-serif text-charcoal font-semibold mb-2">Crear un Nuevo Viajesito</h2>
+          <p className="text-gray-500 text-sm">Registremos nuestra experiencia juntos.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 relative">
@@ -217,16 +248,19 @@ export default function AddJourney() {
             
             {/* Caja punteada */}
             <div className="border-2 border-dashed border-bronze/40 rounded-xl p-8 text-center hover:bg-roman-bg/50 transition-colors relative cursor-pointer">
-              {/* Input invisible flotando sobre la caja */}
               <input 
                 type="file" 
                 multiple 
-                accept="image/*,video/*"
+                accept="image/*,video/*,.heic" 
                 onChange={handlePhotoSelect}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               <ImagePlus className="mx-auto text-bronze mb-2" size={32} />
-              <p className="text-sm font-medium text-charcoal">Drag & drop photos here</p>
+              
+              {/* Texto dinámico que avisa si se está procesando un HEIC */}
+              <p className="text-sm font-medium text-charcoal">
+                {isConverting ? 'Optimizando formato de iPhone...' : 'Drag & drop photos/videos here'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">or click to browse from device</p>
             </div>
 
@@ -258,7 +292,7 @@ export default function AddJourney() {
             disabled={isSubmitting}
             className="w-full bg-bronze hover:bg-bronze-dark text-white font-medium py-3.5 rounded-lg transition-colors shadow-md mt-4 disabled:opacity-50 flex justify-center items-center"
           >
-            {isSubmitting ? 'Sealing Memories...' : 'Seal Our Memories'}
+            {isSubmitting ? 'Creando Recuerdo...' : 'Crear Recuerdo'}
           </button>
         </form>
 
